@@ -30,7 +30,10 @@ should be forwarded through some authentication server that sets the
 proxy-user HTTP header of the forwarded requests.'
 
 1. Clone this repository.  
-2. In the directory of the cloned repo, run `./spinup 61453`
+2. Edit `container/Dockerfile` so that the last line looks like `CMD . /tmp/start.sh 1.2.3.4` 
+where 1.2.3.4 is replaced with the IP of the computer you're serving it 
+from.
+3. In the directory of the cloned repo, run `./spinup 61453`
 
 ## Resync the book to the git repository, ignoring homework backups
 
