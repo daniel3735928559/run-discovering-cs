@@ -1,5 +1,6 @@
 this_dir=$PWD
-hw_backup=$1
+port=$1
+hw_backup=$2
 if [[ -e container/src ]]; then
   cd container
   git clone https://github.com/daniel3735928559/discovering-cs.git
@@ -21,7 +22,7 @@ if [[ "$cid" ]]; then
   docker cp $cid:/tmp/logs/access.log logs_data/"$dt"
   yes | cp ratings_data/"$dt"/ratings/ratings.log container/src/ratings
   yes | cp logs_data/"$dt"/access.log container/src/logs
-  if [[ "$hw_backup" == "hw" ]]; then
+  if [[ "$hw_backup" != "nohw" ]]; then
     echo 'Backing up homework submissions...'
     docker cp $cid:/tmp/sub_data hw_data/"$dt"/
     yes | cp -r hw_data/"$dt"/sub_data container/src 
@@ -29,9 +30,11 @@ if [[ "$cid" ]]; then
 
   docker stop $cid
 else
+  mkdir container/src/ratings
+  mkdir container/src/logs
   touch container/src/ratings/ratings.log
   touch container/src/logs/access.log
 fi
 
 docker build -t discoveringcs container; 
-docker run -p 61453:61453 discoveringcs
+docker run -p "$port":61453 discoveringcs
