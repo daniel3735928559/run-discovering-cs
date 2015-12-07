@@ -1,0 +1,37 @@
+this_dir=$PWD
+hw_backup=$1
+if [[ -e container/src ]]; then
+  cd container
+  git clone https://github.com/daniel3735928559/discovering-cs.git
+  mv discovering-cs src
+  cd $this_dir
+else 
+  cd container/src
+  git pull
+  cd $this_dir
+fi
+
+cid=$(docker ps|grep 61453|awk '{print $1}')
+dt=$(date +%Y%m%d_%H%M%S)
+
+if [[ "$cid" ]]; then
+  echo 'Backing up ratings and logs...'
+  mkdir hw_data/"$dt"
+  docker cp $cid:/tmp/ratings ratings_data/"$dt"
+  docker cp $cid:/tmp/logs/access.log logs_data/"$dt"
+  yes | cp ratings_data/"$dt"/ratings/ratings.log container/src/ratings
+  yes | cp logs_data/"$dt"/access.log container/src/logs
+  if [[ "$hw_backup" == "hw" ]]; then
+    echo 'Backing up homework submissions...'
+    docker cp $cid:/tmp/sub_data hw_data/"$dt"/
+    yes | cp -r hw_data/"$dt"/sub_data container/src 
+  fi
+
+  docker stop $cid
+else
+  touch container/src/ratings/ratings.log
+  touch container/src/logs/access.log
+fi
+
+docker build -t discoveringcs container; 
+docker run -p 61453:61453 discoveringcs

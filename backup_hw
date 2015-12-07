@@ -1,0 +1,4 @@
+cid=$(docker ps|grep 61453|awk '{print $1}')
+dt=$(date +%Y%m%d_%H%M%S)
+mkdir hw_data/"$dt"
+docker cp $cid:/tmp/sub_data hw_data/"$dt"/

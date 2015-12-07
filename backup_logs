@@ -1,0 +1,3 @@
+cid=$(docker ps|grep 61453|awk '{print $1}')
+dt=$(date +%Y%m%d_%H%M%S)
+docker cp $cid:/tmp/logs/access.log logs_data/"$dt"
