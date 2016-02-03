@@ -1,0 +1,97 @@
+while [[ $# -ge 1 ]]
+do
+key="$1"
+echo $key
+LOGS=0
+HW=0
+RATINGS=0
+UPDATE=0
+RESTART=0
+INIT=0
+CREATE=0
+
+case $key in
+    -s|--restart)
+        RESTART=1
+    ;;
+    -l|--logs)
+        LOGS=1
+    ;;
+    -h|--hw)
+        HOMEWORK=1
+    ;;
+    -r|--ratings)
+        RATINGS=1
+    ;;
+    -u|--update)
+        UPDATE=1
+    ;;
+    -i|--init)
+        INIT=1
+    ;;
+    -c|--create)
+        CREATE=1
+    ;;
+    *)
+        #default
+    ;;
+esac
+shift
+done
+
+cid=$(docker ps|grep 61453|awk '{print $1}')
+dt=$(date +%Y%m%d_%H%M%S)
+
+echo $LOGS $HW $RATINGS $UPDATE $RESTART $INIT $CREATE
+
+if [[ $CREATE -eq 1 ]]; then
+    rm -rf container/src container/old/*
+    git clone --separate-git-dir=/dev/null https://github.com/daniel3735928559/discovering-cs.git container/src
+    for x in `cat version_manifest`; do
+        git clone --separate-git-dir=/dev/null -b "$x" https://github.com/daniel3735928559/discovering-cs.git container/old/"$x"
+    done
+    exit
+fi
+
+if [[ $INIT -eq 1 ]]; then
+    docker build -t discoveringcs container; 
+    docker run -p 61453:61453 discoveringcs
+    exit
+fi
+
+
+# Update
+
+if [[ $UPDATE -eq 1 ]]; then
+    echo Updating
+    cd container/src
+    git pull
+    cd -
+fi
+
+# Backup stuff
+
+if [[ $HW -eq 1 ]]; then
+    echo Backing up hw submissions
+    mkdir data/hw/"$dt"
+    docker cp $cid:/tmp/sub_data data/hw/"$dt"/
+    [[ $LAUNCH -eq 1 ]] && yes | cp -r hw_data/"$dt"/sub_data container/src 
+fi
+
+if [[ $RATINGS -eq 1 ]]; then
+    echo Backing up ratings
+    docker cp $cid:/tmp/ratings data/ratings/"$dt"
+    [[ $LAUNCH -eq 1 ]] && yes | cp data/ratings/"$dt"/ratings/ratings.log container/src/ratings
+fi
+
+if [[ $LOGS -eq 1 ]]; then
+    echo Backing up logs
+    docker cp $cid:/tmp/logs/access.log data/logs/"$dt"
+    [[ $LAUNCH -eq 1 ]] && yes | cp -v data/logs/"$dt"/access.log container/src/logs
+fi
+
+if [[ $RESTART -eq 1 ]]; then
+    docker ps|grep 61453|awk '{print $1}' | xargs docker stop
+    docker build -t discoveringcs container; 
+    docker run -p 61453:61453 discoveringcs
+fi
